@@ -1,0 +1,21 @@
+.app {
+  display: flex;
+  gap: 100px;
+}
+
+.cart-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-btn {
+  margin-top: 80px;
+}
+
+ul li {
+  list-style-type: none;
+}
+
+h1 {
+  text-align: center;
+}
