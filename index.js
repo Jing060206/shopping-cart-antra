@@ -3,7 +3,7 @@ const API = (() => {
 
   const getCart = () => {
     // define your method to get cart data
-    fetch(URL + "/cart").then((data) => data.json());
+    return fetch(URL + "/cart").then((data) => data.json());
   };
 
   // define your method to get inventory data
@@ -13,25 +13,33 @@ const API = (() => {
 
   const addToCart = (inventoryItem) => {
     // define your method to add an item to cart
-    return fetch(URL, {
+    return fetch(URL + "/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(inventoryItem),
     }).then((res) => res.json());
   };
 
-  const updateCart = (id, newAmount) => {
+  const updateInventory = (id, data) => {
+    return fetch(URL + "/inventory/" + id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  };
+
+  const updateCart = (id, data) => {
     // define your method to update an item in cart
-    return fetch(URL + `/${id}`, {
+    return fetch(URL + "/cart" + `/${id}`, {
       method: "PATCH",
-      body: JSON.stringify(updateTodo),
+      body: JSON.stringify(data),
       headers: { "Content-Type": "application/json" },
     }).then((res) => res.json());
   };
 
   const deleteFromCart = (id) => {
     // define your method to delete an item in cart
-    return fetch(URL + `/${id}`, {
+    return fetch(URL + "/cart" + `/${id}`, {
       method: "DELETE",
     }).then((res) => res.json());
   };
@@ -50,6 +58,7 @@ const API = (() => {
     addToCart,
     deleteFromCart,
     checkout,
+    updateInventory,
   };
 })();
 
@@ -106,19 +115,20 @@ const Model = (() => {
 const View = (() => {
   // implement your logic for View
   const inventoryListEl = document.querySelector(".inventory-container ul");
+  const inventoryItem = document.querySelector(".li");
   const cartListEl = document.querySelector(".cart-wrapper ul");
-  const decreaseBtn = document.getElementById("increase");
+  const checkoutBtn = document.querySelector(".checkout-btn");
 
   const renderInventory = (inventory) => {
     let inventoryTemp = "";
     inventory.forEach((item) => {
       const liTemp = `
-          <li id="${item.id}">
+          <li class="li" id="${item.id}">
           <span>${item.content}</span>
-          <button class="decrease-btn">-</button>
-          <span id="amount" class="amount">9</span>
-          <button id="increase"class="increase-btn">+</button>
-          <button class="add-cart-btn">add to cart</button>
+          <button id="decrease" class="decrease-btn" data-id="${item.id}">-</button>
+          <span id="amount" class="amount">${item.amount}</span>
+          <button id="increase"class="increase-btn" data-id="${item.id}">+</button>
+          <button class="add-cart-btn"  data-id="${item.id}">add to cart</button>
           </li>
           `;
       inventoryTemp += liTemp;
@@ -127,11 +137,29 @@ const View = (() => {
     inventoryListEl.innerHTML = inventoryTemp;
   };
 
+  const renderCart = (cart) => {
+    let temp = "";
+    cart.forEach((item) => {
+      const liTemp = `
+          <li class="li" id="${item.id}">
+          <span>${item.content}</span>
+          <span id="amount" class="amount">quantity: ${item.amount}</span>
+          <button class="delete-cart-btn" data-id="${item.id}">Delete</button>
+          </li>
+          `;
+      temp += liTemp;
+    });
+
+    cartListEl.innerHTML = temp;
+  };
+
   return {
     inventoryListEl,
     cartListEl,
-    decreaseBtn,
     renderInventory,
+    renderCart,
+    inventoryItem,
+    checkoutBtn,
   };
 })();
 
@@ -143,42 +171,78 @@ const Controller = ((model, view) => {
     model.getInventory().then((data) => {
       state.inventory = data;
     });
+    model.getCart().then((data) => {
+      state.cart = data;
+    });
+    view.cartListEl.addEventListener("click", (e) => {
+      let id = parseInt(e.target.dataset.id);
+      if (e.target.className === "delete-cart-btn") {
+        handleDelete(id);
+      }
+    });
+    view.checkoutBtn.addEventListener("click", () => {
+      handleCheckout();
+    });
   };
-  const handleUpdateAmount = (event) => {
+
+  const handleUpdateAmount = () => {
     view.inventoryListEl.addEventListener("click", (event) => {
       let amountEl = document.getElementById("amount");
       let quantity = parseInt(amountEl.innerText);
 
-      if (event.target.className !== "decrease-btn") return;
+      let id = parseInt(event.target.dataset.id);
+      let tempInventory = [...state.inventory];
+      objIndex = state.inventory.findIndex((obj) => obj.id == id);
+      const newData = state.inventory.find((item) => item.id === id);
 
       if (event.target.className === "decrease-btn") {
-        if (quantity > 0) {
-          quantity--;
-          amountEl.innerText = quantity;
+        if (quantity > 1) {
+          newData.amount--;
+          tempInventory[objIndex] = newData;
+          state.inventory = tempInventory;
+          console.log(newData);
+          API.updateInventory(id, newData);
         }
-      }
+      } else if (event.target.className === "increase-btn") {
+        newData.amount++;
+        tempInventory[objIndex] = newData;
+        state.inventory = tempInventory;
+        console.log(newData);
+        API.updateInventory(id, newData);
+      } else if (event.target.className === "add-cart-btn") {
+        let alreadyExist;
+        alreadyExist = !!state.cart.find((item) => item.id === id);
+        if (!alreadyExist) API.addToCart(newData);
+        else {
+          let newItem = state.cart.find((item) => item.id === id);
+          newItem.amount += newData.amount;
 
-      if (event.target.className !== "increase-btn") return;
-      if (event.target.className === "increase-btn") {
-        quantity++;
-        amountEl.innerText = quantity;
+          let tempCart = [...state.cart];
+          let index = state.cart.findIndex((obj) => obj.id == id);
+          tempCart[index] = newItem;
+          state.cart = tempCart;
+          API.updateCart(id, newItem);
+        }
       }
     });
   };
 
-  const handleAddToCart = () => {};
+  const handleDelete = (id) => {
+    API.deleteFromCart(id);
+  };
 
-  const handleDelete = () => {};
-
-  const handleCheckout = () => {};
+  const handleCheckout = () => {
+    console.log("cleared");
+    state.cart = [];
+    API.checkout();
+  };
   const bootstrap = () => {
     init();
     state.subscribe(() => {
       view.renderInventory(state.inventory);
+      view.renderCart(state.cart);
     });
     handleUpdateAmount();
-
-    handleCheckout();
   };
   return {
     bootstrap,
