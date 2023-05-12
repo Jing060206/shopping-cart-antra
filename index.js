@@ -201,18 +201,18 @@ const Controller = ((model, view) => {
           tempInventory[objIndex] = newData;
           state.inventory = tempInventory;
           console.log(newData);
-          API.updateInventory(id, newData);
+          model.updateInventory(id, newData);
         }
       } else if (event.target.className === "increase-btn") {
         newData.amount++;
         tempInventory[objIndex] = newData;
         state.inventory = tempInventory;
         console.log(newData);
-        API.updateInventory(id, newData);
+        model.updateInventory(id, newData);
       } else if (event.target.className === "add-cart-btn") {
         let alreadyExist;
         alreadyExist = !!state.cart.find((item) => item.id === id);
-        if (!alreadyExist) API.addToCart(newData);
+        if (!alreadyExist) model.addToCart(newData);
         else {
           let newItem = state.cart.find((item) => item.id === id);
           newItem.amount += newData.amount;
@@ -221,20 +221,20 @@ const Controller = ((model, view) => {
           let index = state.cart.findIndex((obj) => obj.id == id);
           tempCart[index] = newItem;
           state.cart = tempCart;
-          API.updateCart(id, newItem);
+          model.updateCart(id, newItem);
         }
       }
     });
   };
 
   const handleDelete = (id) => {
-    API.deleteFromCart(id);
+    model.deleteFromCart(id);
   };
 
   const handleCheckout = () => {
     console.log("cleared");
     state.cart = [];
-    API.checkout();
+    model.checkout();
   };
   const bootstrap = () => {
     init();
