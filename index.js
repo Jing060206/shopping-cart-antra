@@ -100,7 +100,9 @@ const Model = (() => {
     addToCart,
     deleteFromCart,
     checkout,
+    updateInventory,
   } = API;
+
   return {
     State,
     getCart,
@@ -109,6 +111,7 @@ const Model = (() => {
     addToCart,
     deleteFromCart,
     checkout,
+    updateInventory,
   };
 })();
 
@@ -178,41 +181,47 @@ const Controller = ((model, view) => {
 
   const handleUpdateAmount = () => {
     view.inventoryListEl.addEventListener("click", (event) => {
-      let amountEl = document.getElementById("amount");
+      let amountEl = event.target.parentNode.querySelector(".amount");
       let quantity = parseInt(amountEl.innerText);
 
       let id = parseInt(event.target.dataset.id);
       let tempInventory = [...state.inventory];
+
       objIndex = state.inventory.findIndex((obj) => obj.id == id);
       const newData = state.inventory.find((item) => item.id === id);
 
       if (event.target.className === "decrease-btn") {
-        if (quantity > 1) {
+        if (quantity > 0) {
           newData.amount--;
-          tempInventory[objIndex] = newData;
-          state.inventory = tempInventory;
-          console.log(newData);
-          model.updateInventory(id, newData);
+          model.updateInventory(id, newData).then((data) => {
+            tempInventory[objIndex] = newData;
+            state.inventory = tempInventory;
+          });
         }
       } else if (event.target.className === "increase-btn") {
         newData.amount++;
-        tempInventory[objIndex] = newData;
-        state.inventory = tempInventory;
-        console.log(newData);
-        model.updateInventory(id, newData);
+        model.updateInventory(id, newData).then((data) => {
+          tempInventory[objIndex] = newData;
+          state.inventory = tempInventory;
+        });
       } else if (event.target.className === "add-cart-btn") {
         let alreadyExist;
         alreadyExist = !!state.cart.find((item) => item.id === id);
-        if (!alreadyExist) model.addToCart(newData);
+        if (!alreadyExist)
+          model.addToCart(newData).then((data) => {
+            alreadyExist = !!state.cart.find((item) => item.id === id);
+          });
         else {
           let newItem = state.cart.find((item) => item.id === id);
           newItem.amount += newData.amount;
 
           let tempCart = [...state.cart];
           let index = state.cart.findIndex((obj) => obj.id == id);
-          tempCart[index] = newItem;
-          state.cart = tempCart;
-          model.updateCart(id, newItem);
+
+          model.updateCart(id, newItem).then((data) => {
+            tempCart[index] = newItem;
+            state.cart = tempCart;
+          });
         }
       }
     });
