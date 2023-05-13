@@ -174,15 +174,6 @@ const Controller = ((model, view) => {
     model.getCart().then((data) => {
       state.cart = data;
     });
-    view.cartListEl.addEventListener("click", (e) => {
-      let id = parseInt(e.target.dataset.id);
-      if (e.target.className === "delete-cart-btn") {
-        handleDelete(id);
-      }
-    });
-    view.checkoutBtn.addEventListener("click", () => {
-      handleCheckout();
-    });
   };
 
   const handleUpdateAmount = () => {
@@ -227,15 +218,25 @@ const Controller = ((model, view) => {
     });
   };
 
-  const handleDelete = (id) => {
-    model.deleteFromCart(id);
+  const handleDelete = () => {
+    view.cartListEl.addEventListener("click", (event) => {
+      if (event.target.className != "delete-cart-btn") return;
+      const DelId = parseInt(event.target.parentNode.id);
+      model.deleteFromCart(DelId).then((data) => {
+        state.cart = state.cart.filter((item) => item.id !== +DelId);
+      });
+    });
   };
 
   const handleCheckout = () => {
-    console.log("cleared");
-    state.cart = [];
-    model.checkout();
+    view.checkoutBtn.addEventListener("click", (event) => {
+      model.checkout().then((data) => {
+        state.cart = [];
+        console.log(data);
+      });
+    });
   };
+
   const bootstrap = () => {
     init();
     state.subscribe(() => {
@@ -243,6 +244,8 @@ const Controller = ((model, view) => {
       view.renderCart(state.cart);
     });
     handleUpdateAmount();
+    handleDelete();
+    handleCheckout();
   };
   return {
     bootstrap,
