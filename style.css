@@ -1,6 +1,17 @@
+body {
+  margin: 0;
+  padding: 20px;
+}
+
 .app {
   display: flex;
   gap: 100px;
+  max-width: 600px;
+  border: 1px solid black;
+  padding: 20px;
+  margin: 0 auto;
+  margin-top: 80px;
+  justify-content: center;
 }
 
 .cart-wrapper {
